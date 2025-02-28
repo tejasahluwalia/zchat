@@ -1,6 +1,6 @@
 import { client, setTokens } from '$lib/server/auth';
 import { subjects } from '../../auth/subjects';
-import { error, json } from '@sveltejs/kit';
+import { error, json, redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async (event) => {
@@ -9,6 +9,7 @@ export const load: PageServerLoad = async (event) => {
 	const refreshToken = cookies.get('refresh_token');
 
 	if (!accessToken) {
+		redirect(307, '/login');
 		return { userId: null };
 	}
 
@@ -17,6 +18,7 @@ export const load: PageServerLoad = async (event) => {
 	});
 
 	if (verified.err) {
+		redirect(307, '/login');
 		return { userId: null };
 	}
 	if (verified.tokens) {

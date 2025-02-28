@@ -1,7 +1,7 @@
 import type { Actions } from './$types';
 import { redirect } from '@sveltejs/kit';
 import { client, setTokens } from '$lib/server/auth';
-import { subjects } from '../../../auth/subjects';
+import { subjects } from '$lib/subjects';
 
 export const actions = {
 	default: async (event) => {
@@ -20,7 +20,7 @@ export const actions = {
 		}
 
 		const host = event.url.host;
-		const protocol = host?.includes('localhost') ? 'http' : 'https';
+		const protocol = host?.includes('localhost') || host?.includes('192.168') ? 'http' : 'https';
 		const { url } = await client.authorize(`${protocol}://${host}/auth/callback`, 'code');
 		redirect(302, url);
 	}

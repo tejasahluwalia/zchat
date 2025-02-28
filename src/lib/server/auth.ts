@@ -12,12 +12,14 @@ export function setTokens(event: RequestEvent, access: string, refresh: string):
 		httpOnly: true,
 		sameSite: 'lax',
 		path: '/',
-		maxAge: 34560000
+		maxAge: 34560000,
+		secure: event.url.protocol === 'https:'
 	});
 	event.cookies.set('refresh_token', refresh, {
 		httpOnly: true,
 		sameSite: 'lax',
 		path: '/',
-		maxAge: 34560000
+		maxAge: 34560000,
+		secure: event.url.protocol === 'https:'
 	});
 }
