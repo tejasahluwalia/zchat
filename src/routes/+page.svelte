@@ -33,10 +33,9 @@
 		chats.current.find((chat) => chat.id === state.selectedChatId) ?? null
 	);
 
-	function createChat() {
+	async function createChat() {
 		if (!state.newChatTitle.trim()) return;
-		console.log('Creating chat:', state.newChatTitle);
-		z.current.mutate.chatsTable.insert({
+		await z.current.mutate.chatsTable.insert({
 			id: nanoid(),
 			title: state.newChatTitle,
 			userId: data.userId
@@ -44,18 +43,18 @@
 		state.newChatTitle = '';
 	}
 
-	function deleteChat(chatId: string) {
-		console.log('Deleting chat:', chatId);
+	async function deleteChat(chatId: string) {
+		await z.current.mutate.chatsTable.delete({ id: chatId });
 	}
 
 	function selectChat(chatId: string) {
 		state.selectedChatId = chatId;
 	}
 
-	function sendMessage() {
+	async function sendMessage() {
 		if (!state.newMessage.trim() || !state.selectedChatId) return;
 
-		z.current.mutate.messagesTable.insert({
+		await z.current.mutate.messagesTable.insert({
 			id: nanoid(),
 			chatId: state.selectedChatId,
 			content: state.newMessage,
@@ -78,7 +77,7 @@
 				/>
 				<button
 					class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-					onclick={createChat}
+					onclick={async () => await createChat()}
 				>
 					Create Chat
 				</button>
@@ -92,7 +91,10 @@
 							<button class="text-blue-500 hover:text-blue-700" onclick={() => selectChat(chat.id)}>
 								Open
 							</button>
-							<button class="text-red-500 hover:text-red-700" onclick={() => deleteChat(chat.id)}>
+							<button
+								class="text-red-500 hover:text-red-700"
+								onclick={async () => await deleteChat(chat.id)}
+							>
 								Delete
 							</button>
 						</div>
@@ -137,7 +139,7 @@
 					/>
 					<button
 						class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-						onclick={sendMessage}
+						onclick={async () => await sendMessage()}
 					>
 						Send
 					</button>
