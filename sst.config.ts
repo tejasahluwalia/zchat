@@ -20,6 +20,7 @@ export default $config({
 		});
 		const database = new sst.aws.Postgres('ZchatDB', {
 			vpc
+			// proxy: true // Proxy is not supported by Zero, but I need it to use sst shell commands with drizzle-kit
 		});
 		const auth = new sst.aws.Auth('ZchatAuth', {
 			issuer: {
