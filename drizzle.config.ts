@@ -3,8 +3,8 @@ import { defineConfig } from 'drizzle-kit';
 
 export default defineConfig({
 	dialect: 'postgresql',
-	schema: ['./db/schema.ts'],
-	out: './db/migrations',
+	schema: ['./src/lib/server/db/schema.ts'],
+	out: './src/lib/server/db/migrations',
 	dbCredentials: {
 		host: Resource.ZchatDB.host,
 		port: Resource.ZchatDB.port,

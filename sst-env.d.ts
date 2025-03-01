@@ -5,14 +5,6 @@
 
 declare module "sst" {
   export interface Resource {
-    "PostgresConnectionString": {
-      "type": "sst.sst.Secret"
-      "value": string
-    }
-    "PostgresDBPassword": {
-      "type": "sst.sst.Secret"
-      "value": string
-    }
     "ZchatAuth": {
       "type": "sst.aws.Auth"
       "url": string

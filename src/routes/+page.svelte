@@ -1,31 +1,24 @@
 <script lang="ts">
-	import type { PageData } from './$types';
-	import { Resource } from 'sst'
-	import { Query } from '$lib/query.svelte.js';
-	import { Z } from '$lib/z.svelte.js';
-	import { schema, type Schema } from "$lib/zero/schema"
+	import type { PageProps } from './$types';
+	import { schema, type Schema } from '$lib/schemas/zeroSchema';
+	import { createZero } from '$lib/zero-svelte/create-zero';
+	const { data }: PageProps = $props();
 
-	const z = new Z<Schema>({
-		server: Resource.ZchatViewSyncer.url,
+	const z = createZero({
+		userID: data.userId.toString(),
 		schema,
-		userID: data.userId
+		server: data.zeroViewSyncer,
+		kvStore: 'mem'
 	});
-
-	const chats = z.query({
-		query: schema.query.chats,
-		params: { userID: data.userId }
-	})
-
-	export let data: PageData;
 </script>
 
 <div>
 	{#if data.userId}
 		<div>User ID: {data.userId}</div>
 		<div>
-			{#each chats.data as chat}
+			<!-- {#each chats.data as chat}
 				<div>{chat.id}</div>
-			{/each}
+			{/each} -->
 		</div>
 		<form method="GET" action="/auth/logout">
 			<button type="submit">Logout</button>
@@ -36,4 +29,5 @@
 			<button type="submit">Login</button>
 		</form>
 	{/if}
+	{JSON.stringify(data)}
 </div>

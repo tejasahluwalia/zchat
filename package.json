@@ -49,7 +49,8 @@
 		"sst": "3.9.16",
 		"svelte-kit-sst": "2.43.5",
 		"tailwindcss": "^4.0.9",
-		"valibot": "^1.0.0-rc.2"
+		"valibot": "^1.0.0-rc.2",
+		"zero-svelte": "^0.2.0"
 	},
 	"trustedDependencies": [
 		"@rocicorp/zero-sqlite3"

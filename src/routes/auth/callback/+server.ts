@@ -10,7 +10,7 @@ export const GET: RequestHandler = async (event) => {
 
 	if (exchanged.err) return error(400, exchanged.err);
 
-	setTokens(event, exchanged.tokens.access, exchanged.tokens.refresh);
+	await setTokens(event, exchanged.tokens.access, exchanged.tokens.refresh);
 
 	return redirect(302, `${url.origin}/`);
 };

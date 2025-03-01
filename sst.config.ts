@@ -23,28 +23,28 @@ export default $config({
 		});
 		const database = new sst.aws.Postgres('ZchatDB', {
 			vpc,
-			proxy: true,
-			password: new sst.Secret('PostgresDBPassword').value
+			proxy: true
 		});
 		const auth = new sst.aws.Auth('ZchatAuth', {
 			issuer: {
 				handler: 'auth/index.handler',
-				link: [database]
+				link: [database],
+				vpc
 			}
 		});
 		const cluster = new sst.aws.Cluster(`ZchatCluster`, {
 			vpc
 		});
-		const conn = new sst.Secret('PostgresConnectionString');
+		const conn = $interpolate`postgres://${database.username}:${database.password}@${database.host}:${database.port}/${database.database}`;
 		const zeroAuthSecret = new sst.Secret('ZeroAuthSecret');
 		const commonEnv = {
-			ZERO_UPSTREAM_DB: conn.value,
-			ZERO_CVR_DB: conn.value,
-			ZERO_CHANGE_DB: conn.value,
+			ZERO_UPSTREAM_DB: conn,
+			ZERO_CVR_DB: conn,
+			ZERO_CHANGE_DB: conn,
 			ZERO_AUTH_SECRET: zeroAuthSecret.value,
 			ZERO_REPLICA_FILE: 'sync-replica.db',
 			ZERO_LITESTREAM_BACKUP_URL: $interpolate`s3://${replicationBucket.name}/backup`,
-			ZERO_IMAGE_URL: `rocicorp/zero:${zeroVersion}`,
+			ZERO_IMAGE_URL: `rocicorp/zero:latest`,
 			ZERO_CVR_MAX_CONNS: '10',
 			ZERO_UPSTREAM_MAX_CONNS: '10'
 		};
@@ -136,9 +136,12 @@ export default $config({
 			handler: './functions/src/permissions.deploy',
 			vpc,
 			link: [database],
-			environment: { ['ZERO_UPSTREAM_DB']: conn.value },
-			copyFiles: [{ from: './zero/schema.ts', to: './schema.ts' }],
-			nodejs: { install: [`@rocicorp/zero`] }
+			environment: { ['ZERO_UPSTREAM_DB']: conn },
+			copyFiles: [
+				{ from: './src/lib/schemas/drizzleSchema.ts', to: './drizzleSchema.ts' },
+				{ from: './src/lib/schemas/zeroSchema.ts', to: './schema.ts' }
+			],
+			nodejs: { install: [`@rocicorp/zero`, 'drizzle-zero', 'drizzle-orm'] }
 		});
 		new aws.lambda.Invocation(
 			'InvokeZeroPermissionsDeployer',

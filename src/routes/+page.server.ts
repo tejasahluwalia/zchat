@@ -2,6 +2,7 @@ import { client, setTokens } from '$lib/server/auth';
 import { subjects } from '../../auth/subjects';
 import { error, json, redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
+import { Resource } from 'sst';
 
 export const load: PageServerLoad = async (event) => {
 	const cookies = event.cookies;
@@ -9,8 +10,7 @@ export const load: PageServerLoad = async (event) => {
 	const refreshToken = cookies.get('refresh_token');
 
 	if (!accessToken) {
-		redirect(307, '/login');
-		return { userId: null };
+		return redirect(307, '/login');
 	}
 
 	const verified = await client.verify(subjects, accessToken, {
@@ -18,14 +18,16 @@ export const load: PageServerLoad = async (event) => {
 	});
 
 	if (verified.err) {
-		redirect(307, '/login');
-		return { userId: null };
+		return redirect(307, '/login');
 	}
+
+	event.locals.userId = verified.subject.properties.id;
+
 	if (verified.tokens) {
-		setTokens(event, verified.tokens.access, verified.tokens.refresh);
+		await setTokens(event, verified.tokens.access, verified.tokens.refresh);
 	}
 
-	event.locals.user = verified.subject;
+	const zeroViewSyncer = Resource.ZchatViewSyncer.url;
 
-	return { userId: verified.subject.properties.id };
+	return { userId: verified.subject.properties.id, zeroViewSyncer };
 };

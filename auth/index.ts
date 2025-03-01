@@ -4,9 +4,19 @@ import { CodeUI } from '@openauthjs/openauth/ui/code';
 import { CodeProvider } from '@openauthjs/openauth/provider/code';
 import { DynamoStorage } from '@openauthjs/openauth/storage/dynamo';
 import { subjects } from './subjects';
-import { db } from '../db';
-import { usersTable } from '../db/schema';
-import { eq } from 'drizzle-orm';
+import { Resource } from 'sst';
+import pg from 'pg';
+const { Client } = pg;
+
+const connConfig = {
+	user: Resource.ZchatDB.username,
+	password: Resource.ZchatDB.password,
+	host: Resource.ZchatDB.host,
+	port: Resource.ZchatDB.port,
+	database: Resource.ZchatDB.database
+};
+
+console.log(connConfig);
 
 const storage = DynamoStorage({
 	table: 'zchat-auth-table',
@@ -15,15 +25,22 @@ const storage = DynamoStorage({
 });
 
 async function getUser(email: string) {
-	const user = await db.query.usersTable.findFirst({
-		where: eq(usersTable.email, email)
-	});
-	return user?.id;
+	const client = new Client(connConfig);
+	await client.connect();
+	const result = await client.query('SELECT * FROM "users" WHERE email = $1::text', [email]);
+	await client.end();
+	return result.rows[0]?.id;
 }
 
 async function createUser(email: string) {
-	const user = await db.insert(usersTable).values({ email, name: email }).returning();
-	return user[0].id;
+	const client = new Client(connConfig);
+	await client.connect();
+	const result = await client.query(
+		'INSERT INTO "users" (email, name) VALUES ($1::text, $2::text) RETURNING id',
+		[email, email]
+	);
+	await client.end();
+	return result.rows[0].id;
 }
 
 const app = issuer({

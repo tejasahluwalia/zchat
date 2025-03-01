@@ -1,7 +1,7 @@
 import type { Actions } from './$types';
 import { redirect } from '@sveltejs/kit';
 import { client, setTokens } from '$lib/server/auth';
-import { subjects } from '$lib/subjects';
+import { subjects } from './subjects';
 
 export const actions = {
 	default: async (event) => {
