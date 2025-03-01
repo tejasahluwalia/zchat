@@ -1,11 +1,10 @@
 import { createZeroSchema } from 'drizzle-zero';
 import {
-	ANYONE_CAN,
 	NOBODY_CAN,
 	definePermissions,
 	type Row,
-	type ExpressionBuilder,
-	type Condition
+	type ExpressionBuilder
+	// type Condition
 } from '@rocicorp/zero';
 import { schema as drizzleSchema } from './drizzleSchema';
 
@@ -56,20 +55,20 @@ export const schema = createZeroSchema(drizzleSchema, {
 
 // Define permissions with the inferred types from Drizzle
 export type Schema = typeof schema;
-type TableName = keyof Schema['tables'];
+// type TableName = keyof Schema['tables'];
 
 export type User = Row<typeof schema.tables.usersTable>;
 export type Message = Row<typeof schema.tables.messagesTable>;
 export type Chat = Row<typeof schema.tables.chatsTable>;
 
-type PermissionRule<TTable extends TableName> = (
-	authData: AuthData,
-	eb: ExpressionBuilder<Schema, TTable>
-) => Condition;
+// type PermissionRule<TTable extends TableName> = (
+// 	authData: AuthData,
+// 	eb: ExpressionBuilder<Schema, TTable>
+// ) => Condition;
 
-function and<TTable extends TableName>(...rules: PermissionRule<TTable>[]): PermissionRule<TTable> {
-	return (authData, eb) => eb.and(...rules.map((rule) => rule(authData, eb)));
-}
+// function and<TTable extends TableName>(...rules: PermissionRule<TTable>[]): PermissionRule<TTable> {
+// 	return (authData, eb) => eb.and(...rules.map((rule) => rule(authData, eb)));
+// }
 
 type AuthData = {
 	sub: string;
@@ -79,16 +78,13 @@ export const permissions: ReturnType<typeof definePermissions> = definePermissio
 	AuthData,
 	Schema
 >(schema, () => {
-	const userIsLoggedIn = (authData: AuthData, { cmpLit }: ExpressionBuilder<Schema, TableName>) =>
-		cmpLit(authData.sub, 'IS NOT', null);
-
 	const userIDMatchesLoggedInUser = (
 		authData: AuthData,
 		{ cmp }: ExpressionBuilder<Schema, 'usersTable'>
-	) => cmp('id', '=', parseInt(authData.sub));
+	) => cmp('id', '=', authData.sub);
 
 	const allowIfChatOwner = (authData: AuthData, eb: ExpressionBuilder<Schema, 'chatsTable'>) =>
-		eb.cmp('userId', '=', parseInt(authData.sub));
+		eb.exists('owner', (q) => q.where((eb) => userIDMatchesLoggedInUser(authData, eb)));
 
 	const allowIfMessageOwner = (
 		authData: AuthData,

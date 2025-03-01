@@ -1,5 +1,5 @@
 /// <reference path="./.sst/platform/config.d.ts" />
-import { execSync } from 'child_process';
+
 export default $config({
 	app(input) {
 		return {
@@ -12,18 +12,14 @@ export default $config({
 		};
 	},
 	async run() {
-		const zeroVersion = execSync('npm list @rocicorp/zero | grep @rocicorp/zero | cut -f 3 -d @')
-			.toString()
-			.trim();
-		const replicationBucket = new sst.aws.Bucket(`ZchatReplicationBucket`);
+		const replicationBucket = new sst.aws.Bucket(`ZchatReplicationBucket`, {});
 		const vpc = new sst.aws.Vpc(`ZchatVpc`, {
 			az: 2,
 			bastion: true,
 			nat: 'ec2'
 		});
 		const database = new sst.aws.Postgres('ZchatDB', {
-			vpc,
-			proxy: true
+			vpc
 		});
 		const auth = new sst.aws.Auth('ZchatAuth', {
 			issuer: {
@@ -44,7 +40,7 @@ export default $config({
 			ZERO_AUTH_SECRET: zeroAuthSecret.value,
 			ZERO_REPLICA_FILE: 'sync-replica.db',
 			ZERO_LITESTREAM_BACKUP_URL: $interpolate`s3://${replicationBucket.name}/backup`,
-			ZERO_IMAGE_URL: `rocicorp/zero:latest`,
+			ZERO_IMAGE_URL: `rocicorp/zero:0.16.2025022800`,
 			ZERO_CVR_MAX_CONNS: '10',
 			ZERO_UPSTREAM_MAX_CONNS: '10'
 		};
@@ -52,6 +48,7 @@ export default $config({
 			cluster: cluster,
 			cpu: '2 vCPU',
 			memory: '8 GB',
+			dev: false,
 			image: commonEnv.ZERO_IMAGE_URL,
 			link: [replicationBucket, database],
 			health: {
@@ -95,6 +92,7 @@ export default $config({
 			cpu: '2 vCPU',
 			memory: '8 GB',
 			image: commonEnv.ZERO_IMAGE_URL,
+			dev: false,
 			link: [replicationBucket, database],
 			health: {
 				command: ['CMD-SHELL', 'curl -f http://localhost:4848/ || exit 1'],
@@ -141,6 +139,7 @@ export default $config({
 				{ from: './src/lib/schemas/drizzleSchema.ts', to: './drizzleSchema.ts' },
 				{ from: './src/lib/schemas/zeroSchema.ts', to: './schema.ts' }
 			],
+			dev: false,
 			nodejs: { install: [`@rocicorp/zero`, 'drizzle-zero', 'drizzle-orm'] }
 		});
 		new aws.lambda.Invocation(
@@ -159,7 +158,10 @@ export default $config({
 				dns: sst.cloudflare.dns()
 			},
 			vpc,
-			link: [database, viewSyncer, auth]
+			link: [database, viewSyncer, auth],
+			server: {
+				runtime: 'nodejs22.x'
+			}
 		});
 		new sst.x.DevCommand('Studio', {
 			link: [database],

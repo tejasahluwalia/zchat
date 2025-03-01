@@ -1,8 +1,17 @@
 import { client, setTokens } from '$lib/server/auth';
 import { subjects } from '../../auth/subjects';
-import { error, json, redirect } from '@sveltejs/kit';
+import { redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
-import { Resource } from 'sst';
+// import { Resource } from 'sst';
+import { ZERO_AUTH_SECRET, VITE_PUBLIC_SERVER } from '$env/static/private';
+import { SignJWT } from 'jose';
+
+function must<T>(val: T | undefined): T {
+	if (val === undefined) {
+		throw new Error('Expected value to be defined');
+	}
+	return val;
+}
 
 export const load: PageServerLoad = async (event) => {
 	const cookies = event.cookies;
@@ -21,13 +30,20 @@ export const load: PageServerLoad = async (event) => {
 		return redirect(307, '/login');
 	}
 
-	event.locals.userId = verified.subject.properties.id;
-
 	if (verified.tokens) {
 		await setTokens(event, verified.tokens.access, verified.tokens.refresh);
 	}
 
-	const zeroViewSyncer = Resource.ZchatViewSyncer.url;
+	event.locals.userId = verified.subject.properties.id;
 
-	return { userId: verified.subject.properties.id, zeroViewSyncer };
+	const zeroJwt = await new SignJWT({ sub: event.locals.userId.toString() })
+		.setProtectedHeader({ alg: 'HS256' })
+		.setIssuedAt()
+		.setExpirationTime('30days')
+		.sign(new TextEncoder().encode(must(ZERO_AUTH_SECRET)));
+
+	// const zeroViewSyncer = Resource.ZchatViewSyncer.url;
+	const zeroViewSyncer = `${VITE_PUBLIC_SERVER}`;
+
+	return { userId: verified.subject.properties.id, zeroViewSyncer, zeroJwt };
 };

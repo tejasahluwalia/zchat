@@ -8,6 +8,12 @@
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"dev": "vite dev --host",
+		"dev:ui": "vite",
+		"dev:auth": "PORT=3001 bun run --hot auth/index.ts",
+		"dev:zero-cache": "zero-cache-dev -p src/lib/schemas/zeroSchema.ts",
+		"dev:db-up": "docker compose --env-file .env -f ./docker/docker-compose.yml up",
+		"dev:db-down": "docker compose --env-file .env -f ./docker/docker-compose.yml down",
+		"dev:clean": "source .env && docker volume rm -f docker_zstart_pgdata && rm -rf \"${ZERO_REPLICA_FILE}\"*",
 		"format": "prettier --write .",
 		"lint": "prettier --check . && eslint .",
 		"prepare": "svelte-kit sync || echo ''",
@@ -32,37 +38,25 @@
 		"svelte": "^5.20.5",
 		"svelte-check": "^4.1.4",
 		"tsx": "^4.19.3",
-		"typescript": "^5.8.2",
+		"typescript": "^5.7.3",
 		"typescript-eslint": "^8.25.0",
 		"vite": "^6.2.0"
 	},
 	"dependencies": {
 		"@openauthjs/openauth": "^0.4.1",
-		"@rocicorp/zero": "^0.16.2025022800",
+		"@rocicorp/zero": "0.16.2025022800",
 		"@tailwindcss/vite": "^4.0.9",
 		"dotenv": "^16.4.7",
 		"drizzle-orm": "^0.40.0",
 		"drizzle-zero": "^0.5.1",
 		"hono": "^4.7.2",
 		"jose": "^6.0.8",
+		"nanoid": "^5.1.2",
 		"pg": "^8.13.3",
 		"sst": "3.9.19",
 		"svelte-kit-sst": "2.43.5",
 		"tailwindcss": "^4.0.9",
 		"valibot": "^1.0.0-rc.2",
 		"zero-svelte": "^0.2.0"
-	},
-	"trustedDependencies": [
-		"@rocicorp/zero-sqlite3"
-	],
-	"pnpm": {
-		"onlyBuiltDependencies": [
-			"esbuild",
-			"@rocicorp/zero-sqlite3"
-		]
-	},
-	"_": "For some reason, sst requires esbuild 0.25.0 when deploying the permission deployer",
-	"overrides": {
-		"esbuild": "0.25.0"
 	}
 }
