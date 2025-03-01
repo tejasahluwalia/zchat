@@ -158,7 +158,7 @@ export default $config({
 				dns: sst.cloudflare.dns()
 			},
 			vpc,
-			link: [database, viewSyncer, auth],
+			link: [database, viewSyncer, auth, zeroAuthSecret],
 			server: {
 				runtime: 'nodejs22.x'
 			}

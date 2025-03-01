@@ -1,50 +1,40 @@
-// import { handle } from 'hono/aws-lambda';
-import { issuer } from '@openauthjs/openauth';
+import { handle } from 'hono/aws-lambda';
+import { DynamoStorage } from '@openauthjs/openauth/storage/dynamo';
+import { Resource } from 'sst';
+// import { MemoryStorage } from '@openauthjs/openauth/storage/memory';
+
 import { CodeUI } from '@openauthjs/openauth/ui/code';
 import { CodeProvider } from '@openauthjs/openauth/provider/code';
-// import { DynamoStorage } from '@openauthjs/openauth/storage/dynamo';
-import { MemoryStorage } from '@openauthjs/openauth/storage/memory';
+import { issuer } from '@openauthjs/openauth';
 import { subjects } from './subjects';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { schema, usersTable } from '../src/lib/schemas/drizzleSchema';
 import { nanoid } from 'nanoid';
-// import { Resource } from 'sst';
-// import pg from 'pg';
 
-import 'dotenv/config';
+// import 'dotenv/config';
+// const connUrl = process.env.ZERO_UPSTREAM_DB!;
 
-// const { Client } = pg;
-
-// const connConfig = {
-// 	user: Resource.ZchatDB.username,
-// 	password: Resource.ZchatDB.password,
-// 	host: Resource.ZchatDB.host,
-// 	port: Resource.ZchatDB.port,
-// 	database: Resource.ZchatDB.database
-// };
-
-const connConfig = process.env.ZERO_UPSTREAM_DB!;
-
-// const storage = DynamoStorage({
-// 	table: 'zchat-auth-table',
-// 	pk: 'pk',
-// 	sk: 'sk'
-// });
+const connConfig = {
+	user: Resource.ZchatDB.username,
+	password: Resource.ZchatDB.password,
+	host: Resource.ZchatDB.host,
+	port: Resource.ZchatDB.port,
+	database: Resource.ZchatDB.database
+};
+const connUrl = `postgresql://${connConfig.user}:${connConfig.password}@${connConfig.host}:${connConfig.port}/${connConfig.database}`;
 
 async function getUser(email: string) {
-	const db = drizzle(connConfig, {
+	const db = drizzle(connUrl, {
 		schema
 	});
 	const user = await db.query.usersTable.findFirst({
 		where: (users, { eq }) => eq(users.email, email)
 	});
-
-	console.log(user);
 	return user?.id;
 }
 
 async function createUser(email: string) {
-	const db = drizzle(connConfig, {
+	const db = drizzle(connUrl, {
 		schema
 	});
 	const newUser = {
@@ -56,9 +46,14 @@ async function createUser(email: string) {
 	return result[0].id;
 }
 
-export default issuer({
+const app = issuer({
 	subjects,
-	storage: MemoryStorage(),
+	storage: DynamoStorage({
+		table: 'zchat-auth-table',
+		pk: 'pk',
+		sk: 'sk'
+	}),
+	// storage: MemoryStorage(),
 	// Remove after setting custom domain
 	allow: async () => true,
 	providers: {
@@ -83,4 +78,4 @@ export default issuer({
 	}
 });
 
-// export const handler = handle(app);
+export const handler = handle(app);
