@@ -1,0 +1,113 @@
+<script lang="ts">
+	import type { PageProps } from './$types';
+	import { schema, type Schema } from '$lib/schemas/zeroSchema';
+	import { Query } from '$lib/zero-svelte/query.svelte';
+	import { Z } from '$lib/zero-svelte/z.svelte';
+	import SvelteMarkdown from '@humanspeak/svelte-markdown';
+	import { page } from '$app/state';
+
+	const { data }: PageProps = $props();
+	const { id: chatId } = page.params;
+
+	const z = new Z<Schema>({
+		userID: 'anon',
+		schema: schema,
+		kvStore: 'mem',
+		server: `${data.zeroViewSyncer}`,
+		auth: undefined,
+		logLevel: 'debug'
+	});
+
+	const chat = new Query(
+		z.current.query.chatsTable
+			.where('id', chatId)
+			.one()
+			.related('messages')
+			.orderBy('createdAt', 'desc')
+	).current;
+
+	let messages = $derived(chat?.messages.toSorted((a, b) => b.createdAt! - a.createdAt!) ?? []);
+</script>
+
+<div class="grid grid-cols-12 h-screen">
+	<!-- Sidebar for chats -->
+	<div class="col-span-2 bg-gray-100 p-4 border-r overflow-y-auto flex flex-col justify-between">
+		<!-- <div>
+			<h1 class="text-xl font-bold mb-4">Chats</h1>
+
+			<form class="flex flex-col gap-2 mb-4">
+				<input
+					type="text"
+					class="border rounded px-3 py-2"
+					placeholder="New chat name"
+					bind:value={chatState.newChatTitle}
+				/>
+				<button
+					class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+					onclick={async () => await createChat()}
+				>
+					Create Chat
+				</button>
+			</form>
+
+			<div class="space-y-2">
+				{#each chats.current || [] as chat (chat.id)}
+					<div
+						class="border rounded p-3 flex justify-between items-center cursor-pointer hover:bg-gray-200"
+						class:bg-blue-100={chat.id === chatState.selectedChatId}
+					>
+						<span class="font-medium truncate">{chat.title || 'Unnamed Chat'}</span>
+						<button onclick={() => selectChat(chat.id)}>Open</button>
+						<button
+							class="text-red-500 hover:text-red-700"
+							onclick={async () => await deleteChat(chat.id)}
+						>
+							Delete
+						</button>
+					</div>
+				{/each}
+			</div>
+		</div>
+		<a href="/logout">Logout</a> -->
+	</div>
+
+	<!-- Main content area -->
+	<div class="p-4 flex flex-col w-full max-h-screen col-span-7">
+		{#if chat}
+			<div class="border rounded p-4 flex-1 flex flex-col max-h-full w-3xl mx-auto">
+				<div class="flex justify-between items-center mb-4">
+					<h2 class="text-xl font-bold">
+						{chat.title || 'Unnamed Chat'}
+					</h2>
+				</div>
+
+				<div class="flex-1 overflow-y-auto border rounded p-3 mb-4 space-y-2">
+					{#each messages || [] as message, idx (message.id)}
+						<div
+							class="p-2 rounded mb-2"
+							class:bg-gray-100={!message.sentByUser}
+							class:bg-blue-100={message.sentByUser}
+						>
+							{#if idx === 0 || messages[idx - 1].sentByUser !== message.sentByUser}
+								<div class="font-bold">{message.sentByUser ? 'You' : 'Assistant'}</div>
+							{/if}
+							<div class="[&_pre]:overflow-auto">
+								<SvelteMarkdown source={message.content} />
+							</div>
+						</div>
+					{/each}
+				</div>
+			</div>
+		{:else}
+			<div class="flex-1 flex items-center justify-center text-gray-500">
+				<div class="text-center">
+					<p class="text-xl mb-2">Select a chat or create a new one</p>
+					<p>Your conversations will appear here</p>
+				</div>
+			</div>
+		{/if}
+	</div>
+
+	<!-- Right sidebar for search -->
+	<div class="col-span-3 bg-gray-100 p-4 border-l overflow-y-auto"></div>
+</div>

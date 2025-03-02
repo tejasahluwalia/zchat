@@ -41,6 +41,7 @@ export const schema = createZeroSchema(drizzleSchema, {
 			id: true,
 			title: true,
 			userId: true,
+			isPublic: true,
 			createdAt: true
 		},
 		messagesTable: {
@@ -91,6 +92,12 @@ export const permissions: ReturnType<typeof definePermissions> = definePermissio
 		eb: ExpressionBuilder<Schema, 'messagesTable'>
 	) => eb.exists('chat', (q) => q.where((eb) => allowIfChatOwner(authData, eb)));
 
+	const allowIfChatPublic = (authData: AuthData, eb: ExpressionBuilder<Schema, 'chatsTable'>) =>
+		eb.cmp('isPublic', '=', true);
+
+	const canSeeChat = (authData: AuthData, eb: ExpressionBuilder<Schema, 'chatsTable'>) =>
+		eb.or(allowIfChatPublic(authData, eb), allowIfChatOwner(authData, eb));
+
 	return {
 		usersTable: {
 			row: {
@@ -115,7 +122,7 @@ export const permissions: ReturnType<typeof definePermissions> = definePermissio
 		},
 		chatsTable: {
 			row: {
-				select: [allowIfChatOwner],
+				select: [canSeeChat],
 				insert: [allowIfChatOwner],
 				update: {
 					preMutation: [allowIfChatOwner],

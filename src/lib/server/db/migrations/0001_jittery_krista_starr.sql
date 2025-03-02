@@ -1,0 +1,1 @@
+ALTER TABLE "chats" ADD COLUMN "isPublic" boolean DEFAULT false NOT NULL;

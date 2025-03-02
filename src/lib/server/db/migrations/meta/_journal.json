@@ -8,6 +8,13 @@
       "when": 1740841561207,
       "tag": "0000_fresh_nick_fury",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1740934154158,
+      "tag": "0001_jittery_krista_starr",
+      "breakpoints": true
     }
   ]
 }

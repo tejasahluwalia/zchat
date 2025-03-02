@@ -14,6 +14,7 @@ export const chatsTable = pgTable('chats', {
 	userId: varchar({ length: 21 })
 		.notNull()
 		.references(() => usersTable.id),
+	isPublic: boolean().notNull().default(false),
 	createdAt: timestamp().notNull().defaultNow()
 });
 
