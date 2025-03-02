@@ -6,6 +6,7 @@
 	import { nanoid } from 'nanoid';
 	import type { LLMRequest } from './llm/+server';
 	import SvelteMarkdown from '@humanspeak/svelte-markdown';
+	import { escapeLike } from '@rocicorp/zero';
 
 	const { data }: PageProps = $props();
 
@@ -43,14 +44,18 @@
 	let messages = $derived(
 		selectedChat?.messages.toSorted((a, b) => b.createdAt! - a.createdAt!) ?? []
 	);
-	
-	let searchResults = $derived(() => {
-		if (!chatState.searchQuery.trim()) return [];
-		
-		return z.current.query.messagesTable
-			.where(eb => eb.like('content', `%${chatState.searchQuery}%`))
-			.toArray();
-	});
+
+	const searchResults = new Query(
+		z.current.query.messagesTable.where('content', 'LIKE', `%${escapeLike(chatState.searchQuery)}%`)
+	);
+
+	// let searchResults = $derived(() => {
+	// 	if (!chatState.searchQuery.trim()) return [];
+
+	// 	return z.current.query.messagesTable
+	// 		.where('content', 'LIKE', `%${escapeLike(chatState.searchQuery)}%`)
+	// 		.run();
+	// });
 
 	async function createChat() {
 		if (!chatState.newChatTitle.trim()) return;
@@ -116,6 +121,36 @@
 	<div class="w-64 bg-gray-100 p-4 border-r overflow-y-auto flex flex-col justify-between">
 		<div>
 			<h1 class="text-xl font-bold mb-4">Chats</h1>
+
+			<!-- Search box -->
+			<div class="mb-4">
+				<input
+					type="text"
+					class="border rounded px-3 py-2 w-full"
+					placeholder="Search messages..."
+					bind:value={chatState.searchQuery}
+				/>
+			</div>
+
+			<!-- Search results -->
+			{#if chatState.searchQuery.trim() && searchResults.current.length > 0}
+				<div class="border rounded p-2 mb-4 max-h-40 overflow-y-auto">
+					<h2 class="font-semibold mb-2">Search Results</h2>
+					{#each searchResults.current as result (result.id)}
+						<button
+							class="p-2 border-b text-sm hover:bg-gray-200 cursor-pointer"
+							onclick={() => selectChat(result.chatId)}
+						>
+							<div class="truncate">{result.content}</div>
+						</button>
+					{/each}
+				</div>
+			{:else if chatState.searchQuery.trim()}
+				<div class="border rounded p-2 mb-4">
+					<p class="text-gray-500 text-sm">No results found</p>
+				</div>
+			{/if}
+
 			<form class="flex flex-col gap-2 mb-4">
 				<input
 					type="text"
