@@ -12,7 +12,7 @@
 		userID: data.userId,
 		schema: schema,
 		kvStore: 'idb',
-		server: data.zeroViewSyncer,
+		server: `${data.zeroViewSyncer}`,
 		auth: data.zeroJwt,
 		logLevel: 'debug'
 	});

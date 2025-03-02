@@ -5,6 +5,7 @@ import { Resource } from 'sst';
 
 import { CodeUI } from '@openauthjs/openauth/ui/code';
 import { CodeProvider } from '@openauthjs/openauth/provider/code';
+import { GithubProvider } from '@openauthjs/openauth/provider/github';
 import { issuer } from '@openauthjs/openauth';
 import { subjects } from './subjects';
 import { drizzle } from 'drizzle-orm/node-postgres';
@@ -64,7 +65,12 @@ const app = issuer({
 					console.log(email, code);
 				}
 			})
-		)
+		),
+		github: GithubProvider({
+			clientId: Resource.GithubOauthClientID.value,
+			clientSecret: Resource.GithubOauthClientSecret.value,
+			scopes: ['email']
+		})
 	},
 	success: async (ctx, value) => {
 		if (value.provider === 'code') {

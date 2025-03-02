@@ -1,13 +1,23 @@
+import { Resource } from 'sst';
+// import { ZERO_UPSTREAM_DB } from '$env/static/private';
+
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { deepseek } from '@ai-sdk/deepseek';
+import { createDeepSeek } from '@ai-sdk/deepseek';
 import { smoothStream, streamText } from 'ai';
-import { ZERO_UPSTREAM_DB } from '$env/static/private';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import { messagesTable, schema } from '$lib/schemas/drizzleSchema';
 import { nanoid } from 'nanoid';
 
-const connUrl = ZERO_UPSTREAM_DB;
+// const connUrl = ZERO_UPSTREAM_DB;
+const connConfig = {
+	user: Resource.ZchatDB.username,
+	password: Resource.ZchatDB.password,
+	host: Resource.ZchatDB.host,
+	port: Resource.ZchatDB.port,
+	database: Resource.ZchatDB.database
+};
+const connUrl = `postgresql://${connConfig.user}:${connConfig.password}@${connConfig.host}:${connConfig.port}/${connConfig.database}`;
 
 export type LLMRequest = {
 	chatId: string;
@@ -26,6 +36,10 @@ export const POST: RequestHandler = async (event) => {
 		schema
 	});
 
+	const deepseek = createDeepSeek({
+		apiKey: Resource.DeepseekApiKey.value
+	});
+
 	const { textStream } = streamText({
 		model: deepseek('deepseek-chat'),
 		messages,
@@ -36,7 +50,6 @@ export const POST: RequestHandler = async (event) => {
 	});
 
 	for await (const textPart of textStream) {
-		console.log(textPart);
 		await db.insert(messagesTable).values({
 			id: nanoid(),
 			chatId: chatId,

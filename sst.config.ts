@@ -13,27 +13,40 @@ export default $config({
 	},
 	async run() {
 		const replicationBucket = new sst.aws.Bucket(`ZchatReplicationBucket`, {});
+
 		const vpc = new sst.aws.Vpc(`ZchatVpc`, {
 			az: 2,
 			bastion: true,
 			nat: 'ec2'
 		});
+
 		const database = new sst.aws.Postgres('ZchatDB', {
 			vpc
 			// proxy: true // Proxy is not supported by Zero, but I need it to use sst shell commands with drizzle-kit
 		});
+
+		const githubOauthClientID = new sst.Secret('GithubOauthClientID');
+		const githubOauthClientSecret = new sst.Secret('GithubOauthClientSecret');
+
 		const auth = new sst.aws.Auth('ZchatAuth', {
+			domain: {
+				name: 'zchat-auth.tej.ai',
+				dns: sst.cloudflare.dns()
+			},
 			issuer: {
 				handler: 'auth/index.handler',
-				link: [database],
+				link: [database, githubOauthClientID, githubOauthClientSecret],
 				vpc
 			}
 		});
+
 		const cluster = new sst.aws.Cluster(`ZchatCluster`, {
 			vpc
 		});
+
 		const conn = $interpolate`postgres://${database.username}:${database.password}@${database.host}:${database.port}/${database.database}`;
 		const zeroAuthSecret = new sst.Secret('ZeroAuthSecret');
+
 		const commonEnv = {
 			ZERO_UPSTREAM_DB: conn,
 			ZERO_CVR_DB: conn,
@@ -45,6 +58,7 @@ export default $config({
 			ZERO_CVR_MAX_CONNS: '10',
 			ZERO_UPSTREAM_MAX_CONNS: '10'
 		};
+
 		const replicationManager = new sst.aws.Service(`ZchatReplicationManager`, {
 			cluster: cluster,
 			cpu: '2 vCPU',
@@ -88,6 +102,7 @@ export default $config({
 				}
 			}
 		});
+
 		const viewSyncer = new sst.aws.Service(`ZchatViewSyncer`, {
 			cluster: cluster,
 			cpu: '2 vCPU',
@@ -110,7 +125,11 @@ export default $config({
 			},
 			loadBalancer: {
 				public: true,
-				rules: [{ listen: '80/http', forward: '4848/http' }]
+				domain: { name: 'zchat-view-syncer.tej.ai', dns: sst.cloudflare.dns() },
+				rules: [
+					{ listen: '80/http', forward: '4848/http' },
+					{ listen: '443/https', forward: '4848/http' }
+				]
 			},
 			transform: {
 				target: {
@@ -131,6 +150,7 @@ export default $config({
 				}
 			}
 		});
+
 		const permissionsDeployer = new sst.aws.Function('ZeroPermissionsDeployer', {
 			handler: './functions/src/permissions.deploy',
 			vpc,
@@ -143,6 +163,7 @@ export default $config({
 			dev: false,
 			nodejs: { install: [`@rocicorp/zero`, 'drizzle-zero', 'drizzle-orm'] }
 		});
+
 		new aws.lambda.Invocation(
 			'InvokeZeroPermissionsDeployer',
 			{
@@ -153,17 +174,20 @@ export default $config({
 			{ dependsOn: viewSyncer }
 		);
 
+		const deepseekApiKey = new sst.Secret('DeepseekApiKey');
+
 		new sst.aws.SvelteKit('ZchatWeb', {
 			domain: {
 				name: 'zchat.tej.ai',
 				dns: sst.cloudflare.dns()
 			},
 			vpc,
-			link: [database, viewSyncer, auth, zeroAuthSecret],
+			link: [database, viewSyncer, auth, zeroAuthSecret, deepseekApiKey],
 			server: {
 				runtime: 'nodejs22.x'
 			}
 		});
+
 		new sst.x.DevCommand('Studio', {
 			link: [database],
 			dev: {

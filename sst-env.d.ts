@@ -5,6 +5,18 @@
 
 declare module "sst" {
   export interface Resource {
+    "DeepseekApiKey": {
+      "type": "sst.sst.Secret"
+      "value": string
+    }
+    "GithubOauthClientID": {
+      "type": "sst.sst.Secret"
+      "value": string
+    }
+    "GithubOauthClientSecret": {
+      "type": "sst.sst.Secret"
+      "value": string
+    }
     "ZchatAuth": {
       "type": "sst.aws.Auth"
       "url": string
