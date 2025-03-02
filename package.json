@@ -44,6 +44,7 @@
 	},
 	"dependencies": {
 		"@ai-sdk/deepseek": "^0.1.12",
+		"@humanspeak/svelte-markdown": "^0.7.18",
 		"@openauthjs/openauth": "^0.4.1",
 		"@rocicorp/zero": "0.16.2025022800",
 		"@tailwindcss/vite": "^4.0.9",

@@ -1,11 +1,11 @@
 import type { RequestEvent } from '@sveltejs/kit';
 import { createClient } from '@openauthjs/openauth/client';
-import { Resource } from 'sst';
+// import { Resource } from 'sst';
 
 export const client = createClient({
 	clientID: 'ZchatWeb',
-	issuer: Resource.ZchatAuth.url
-	// issuer: 'http://localhost:3001'
+	// issuer: Resource.ZchatAuth.url
+	issuer: 'http://localhost:3001'
 });
 
 function secure(event: RequestEvent) {

@@ -1,7 +1,7 @@
-import { handle } from 'hono/aws-lambda';
-import { DynamoStorage } from '@openauthjs/openauth/storage/dynamo';
-import { Resource } from 'sst';
-// import { MemoryStorage } from '@openauthjs/openauth/storage/memory';
+// import { handle } from 'hono/aws-lambda';
+// import { DynamoStorage } from '@openauthjs/openauth/storage/dynamo';
+// import { Resource } from 'sst';
+import { MemoryStorage } from '@openauthjs/openauth/storage/memory';
 
 import { CodeUI } from '@openauthjs/openauth/ui/code';
 import { CodeProvider } from '@openauthjs/openauth/provider/code';
@@ -12,17 +12,17 @@ import { drizzle } from 'drizzle-orm/node-postgres';
 import { schema, usersTable } from '../src/lib/schemas/drizzleSchema';
 import { nanoid } from 'nanoid';
 
-// import 'dotenv/config';
-// const connUrl = process.env.ZERO_UPSTREAM_DB!;
+import 'dotenv/config';
+const connUrl = process.env.ZERO_UPSTREAM_DB!;
 
-const connConfig = {
-	user: Resource.ZchatDB.username,
-	password: Resource.ZchatDB.password,
-	host: Resource.ZchatDB.host,
-	port: Resource.ZchatDB.port,
-	database: Resource.ZchatDB.database
-};
-const connUrl = `postgresql://${connConfig.user}:${connConfig.password}@${connConfig.host}:${connConfig.port}/${connConfig.database}`;
+// const connConfig = {
+// 	user: Resource.ZchatDB.username,
+// 	password: Resource.ZchatDB.password,
+// 	host: Resource.ZchatDB.host,
+// 	port: Resource.ZchatDB.port,
+// 	database: Resource.ZchatDB.database
+// };
+// const connUrl = `postgresql://${connConfig.user}:${connConfig.password}@${connConfig.host}:${connConfig.port}/${connConfig.database}`;
 
 async function getUser(email: string) {
 	const db = drizzle(connUrl, {
@@ -47,15 +47,15 @@ async function createUser(email: string) {
 	return result[0].id;
 }
 
-const app = issuer({
-	// export default issuer({
+// const app = issuer({
+export default issuer({
 	subjects,
-	storage: DynamoStorage({
-		table: 'zchat-auth-table',
-		pk: 'pk',
-		sk: 'sk'
-	}),
-	// storage: MemoryStorage(),
+	// storage: DynamoStorage({
+	// 	table: 'zchat-auth-table',
+	// 	pk: 'pk',
+	// 	sk: 'sk'
+	// }),
+	storage: MemoryStorage(),
 	// Remove after setting custom domain
 	allow: async () => true,
 	providers: {
@@ -65,12 +65,12 @@ const app = issuer({
 					console.log(email, code);
 				}
 			})
-		),
-		github: GithubProvider({
-			clientId: Resource.GithubOauthClientID.value,
-			clientSecret: Resource.GithubOauthClientSecret.value,
-			scopes: ['email']
-		})
+		)
+		// github: GithubProvider({
+		// 	clientId: Resource.GithubOauthClientID.value,
+		// 	clientSecret: Resource.GithubOauthClientSecret.value,
+		// 	scopes: ['email']
+		// })
 	},
 	success: async (ctx, value) => {
 		if (value.provider === 'code') {
@@ -85,4 +85,4 @@ const app = issuer({
 	}
 });
 
-export const handler = handle(app);
+// export const handler = handle(app);
