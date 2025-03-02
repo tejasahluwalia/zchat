@@ -1,7 +1,7 @@
 import type { RequestHandler } from './$types';
 import { redirect } from '@sveltejs/kit';
 
-export const GET: RequestHandler = async (event) => {
+export const POST: RequestHandler = async (event) => {
 	const { cookies } = event;
 
 	cookies.delete('access_token', { path: '/' });

@@ -98,6 +98,9 @@ export const permissions: ReturnType<typeof definePermissions> = definePermissio
 	const canSeeChat = (authData: AuthData, eb: ExpressionBuilder<Schema, 'chatsTable'>) =>
 		eb.or(allowIfChatPublic(authData, eb), allowIfChatOwner(authData, eb));
 
+	const canSeeMessage = (authData: AuthData, eb: ExpressionBuilder<Schema, 'messagesTable'>) =>
+		eb.exists('chat', (q) => q.where((eb) => canSeeChat(authData, eb)));
+
 	return {
 		usersTable: {
 			row: {
@@ -111,7 +114,7 @@ export const permissions: ReturnType<typeof definePermissions> = definePermissio
 		},
 		messagesTable: {
 			row: {
-				select: [allowIfMessageOwner],
+				select: [canSeeMessage],
 				insert: [allowIfMessageOwner],
 				update: {
 					preMutation: [allowIfMessageOwner],

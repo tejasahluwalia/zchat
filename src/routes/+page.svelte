@@ -7,13 +7,14 @@
 	import type { LLMRequest } from './llm/+server';
 	import SvelteMarkdown from '@humanspeak/svelte-markdown';
 	import { escapeLike } from '@rocicorp/zero';
+	import { enhance } from '$app/forms';
 
 	const { data }: PageProps = $props();
 
 	const z = new Z<Schema>({
 		userID: data.userId,
 		schema: schema,
-		kvStore: 'idb',
+		kvStore: 'mem',
 		server: `${data.zeroViewSyncer}`,
 		auth: data.zeroJwt,
 		logLevel: 'debug'
@@ -151,7 +152,9 @@
 				{/each}
 			</div>
 		</div>
-		<a href="/logout">Logout</a>
+		<form method="POST" action="/auth/logout" use:enhance>
+			<button type="submit">Logout</button>
+		</form>
 	</div>
 
 	<!-- Main content area -->
@@ -162,6 +165,30 @@
 					<h2 class="text-xl font-bold">
 						{selectedChat.title || 'Unnamed Chat'}
 					</h2>
+					<div class="flex items-center gap-3">
+						<label class="flex items-center gap-1 text-sm">
+							<input
+								type="checkbox"
+								checked={selectedChat.isPublic}
+								onchange={async () => {
+									await z.current.mutate.chatsTable.update({
+										id: selectedChat.id,
+										isPublic: !selectedChat.isPublic
+									});
+								}}
+							/>
+							Public
+						</label>
+						<button
+							class="text-sm bg-gray-200 px-2 py-1 rounded hover:bg-gray-300"
+							onclick={() => {
+								const url = `${window.location.origin}/shared-chat/${selectedChat.id}`;
+								navigator.clipboard.writeText(url);
+							}}
+						>
+							Copy Link
+						</button>
+					</div>
 				</div>
 
 				<div class="flex-1 overflow-y-auto border rounded p-3 mb-4 space-y-2">

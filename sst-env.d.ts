@@ -48,7 +48,8 @@ declare module "sst" {
       "type": "sst.aws.Vpc"
     }
     "ZchatWeb": {
-      "type": "sst.aws.SvelteKit"
+      "service": string
+      "type": "sst.aws.Service"
       "url": string
     }
     "ZeroAuthSecret": {

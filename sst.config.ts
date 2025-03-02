@@ -176,15 +176,19 @@ export default $config({
 
 		const deepseekApiKey = new sst.Secret('DeepseekApiKey');
 
-		new sst.aws.SvelteKit('ZchatWeb', {
-			domain: {
-				name: 'zchat.tej.ai',
-				dns: sst.cloudflare.dns()
-			},
-			vpc,
+		new sst.aws.Service('ZchatWeb', {
+			cluster,
 			link: [database, viewSyncer, auth, zeroAuthSecret, deepseekApiKey],
-			server: {
-				runtime: 'nodejs22.x'
+			loadBalancer: {
+				public: true,
+				domain: { name: 'zchat.tej.ai', dns: sst.cloudflare.dns() },
+				rules: [
+					{ listen: '80/http', redirect: '443/https' },
+					{ listen: '443/https', forward: '3000/http' }
+				]
+			},
+			dev: {
+				command: 'npm run dev'
 			}
 		});
 

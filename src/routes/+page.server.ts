@@ -1,5 +1,5 @@
-// import { Resource } from 'sst';
-import { ZERO_AUTH_SECRET, VITE_PUBLIC_SERVER } from '$env/static/private';
+import { Resource } from 'sst';
+// import { ZERO_AUTH_SECRET, VITE_PUBLIC_SERVER } from '$env/static/private';
 
 import { client, setTokens } from '$lib/server/auth';
 import { subjects } from '../../auth/subjects';
@@ -41,11 +41,11 @@ export const load: PageServerLoad = async (event) => {
 		.setProtectedHeader({ alg: 'HS256' })
 		.setIssuedAt()
 		.setExpirationTime('30days')
-		// .sign(new TextEncoder().encode(must(Resource.ZeroAuthSecret.value)));
-		.sign(new TextEncoder().encode(must(ZERO_AUTH_SECRET)));
+		.sign(new TextEncoder().encode(must(Resource.ZeroAuthSecret.value)));
+	// .sign(new TextEncoder().encode(must(ZERO_AUTH_SECRET)));
 
-	// const zeroViewSyncer = Resource.ZchatViewSyncer.url;
-	const zeroViewSyncer = `${VITE_PUBLIC_SERVER}`;
+	const zeroViewSyncer = Resource.ZchatViewSyncer.url;
+	// const zeroViewSyncer = `${VITE_PUBLIC_SERVER}`;
 
 	return { userId: verified.subject.properties.id, zeroViewSyncer, zeroJwt };
 };

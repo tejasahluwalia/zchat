@@ -18,13 +18,15 @@
 		logLevel: 'debug'
 	});
 
-	const chat = new Query(
+	const chatQuery = new Query(
 		z.current.query.chatsTable
 			.where('id', chatId)
 			.one()
 			.related('messages')
 			.orderBy('createdAt', 'desc')
-	).current;
+	);
+
+	let chat = $derived(chatQuery.current);
 
 	let messages = $derived(chat?.messages.toSorted((a, b) => b.createdAt! - a.createdAt!) ?? []);
 </script>
