@@ -45,17 +45,13 @@
 		selectedChat?.messages.toSorted((a, b) => b.createdAt! - a.createdAt!) ?? []
 	);
 
-	const searchResults = new Query(
-		z.current.query.messagesTable.where('content', 'LIKE', `%${escapeLike(chatState.searchQuery)}%`)
+	const searchResults = $derived(
+		z.current.query.messagesTable
+			.where('content', 'LIKE', `%${escapeLike(chatState.searchQuery)}%`)
+			.run()
 	);
 
-	// let searchResults = $derived(() => {
-	// 	if (!chatState.searchQuery.trim()) return [];
-
-	// 	return z.current.query.messagesTable
-	// 		.where('content', 'LIKE', `%${escapeLike(chatState.searchQuery)}%`)
-	// 		.run();
-	// });
+	$effect(() => {});
 
 	async function createChat() {
 		if (!chatState.newChatTitle.trim()) return;
@@ -116,40 +112,11 @@
 	}
 </script>
 
-<div class="flex h-screen">
+<div class="grid grid-cols-12 h-screen">
 	<!-- Sidebar for chats -->
-	<div class="w-64 bg-gray-100 p-4 border-r overflow-y-auto flex flex-col justify-between">
+	<div class="col-span-2 bg-gray-100 p-4 border-r overflow-y-auto flex flex-col justify-between">
 		<div>
 			<h1 class="text-xl font-bold mb-4">Chats</h1>
-
-			<!-- Search box -->
-			<div class="mb-4">
-				<input
-					type="text"
-					class="border rounded px-3 py-2 w-full"
-					placeholder="Search messages..."
-					bind:value={chatState.searchQuery}
-				/>
-			</div>
-
-			<!-- Search results -->
-			{#if chatState.searchQuery.trim() && searchResults.current.length > 0}
-				<div class="border rounded p-2 mb-4 max-h-40 overflow-y-auto">
-					<h2 class="font-semibold mb-2">Search Results</h2>
-					{#each searchResults.current as result (result.id)}
-						<button
-							class="p-2 border-b text-sm hover:bg-gray-200 cursor-pointer"
-							onclick={() => selectChat(result.chatId)}
-						>
-							<div class="truncate">{result.content}</div>
-						</button>
-					{/each}
-				</div>
-			{:else if chatState.searchQuery.trim()}
-				<div class="border rounded p-2 mb-4">
-					<p class="text-gray-500 text-sm">No results found</p>
-				</div>
-			{/if}
 
 			<form class="flex flex-col gap-2 mb-4">
 				<input
@@ -188,7 +155,7 @@
 	</div>
 
 	<!-- Main content area -->
-	<div class="p-4 flex flex-col w-full max-h-screen">
+	<div class="p-4 flex flex-col w-full max-h-screen col-span-7">
 		{#if selectedChat}
 			<div class="border rounded p-4 flex-1 flex flex-col max-h-full w-3xl mx-auto">
 				<div class="flex justify-between items-center mb-4">
@@ -235,6 +202,47 @@
 					<p class="text-xl mb-2">Select a chat or create a new one</p>
 					<p>Your conversations will appear here</p>
 				</div>
+			</div>
+		{/if}
+	</div>
+
+	<!-- Right sidebar for search -->
+	<div class="col-span-3 bg-gray-100 p-4 border-l overflow-y-auto">
+		<h1 class="text-xl font-bold mb-4">Search</h1>
+
+		<!-- Search box -->
+		<div class="mb-4">
+			<input
+				type="text"
+				class="border rounded px-3 py-2 w-full"
+				placeholder="Search messages..."
+				bind:value={chatState.searchQuery}
+			/>
+		</div>
+
+		<!-- Search results -->
+		{#if searchResults.length > 0}
+			<div class="border rounded p-2 mb-4 max-h-96 overflow-y-auto">
+				<h2 class="font-semibold mb-2">Results ({searchResults.length})</h2>
+				{#each searchResults as result (result.id)}
+					<button
+						class="p-2 border-b text-sm hover:bg-gray-200 cursor-pointer mb-2"
+						onclick={() => selectChat(result.chatId)}
+					>
+						<div class="text-xs text-gray-500 mb-1">
+							Chat: {chats.current.find((c) => c.id === result.chatId)?.title || 'Unknown'}
+						</div>
+						<div class="truncate">{result.content}</div>
+					</button>
+				{/each}
+			</div>
+		{:else if chatState.searchQuery.trim()}
+			<div class="border rounded p-2 mb-4">
+				<p class="text-gray-500 text-sm">No results found</p>
+			</div>
+		{:else}
+			<div class="text-gray-500 text-sm">
+				<p>Search across all messages in all chats</p>
 			</div>
 		{/if}
 	</div>
