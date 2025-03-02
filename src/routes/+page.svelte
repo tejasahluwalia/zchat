@@ -4,6 +4,7 @@
 	import { Query } from '$lib/zero-svelte/query.svelte';
 	import { Z } from '$lib/zero-svelte/z.svelte';
 	import { nanoid } from 'nanoid';
+	import type { LLMRequest } from './llm/+server';
 
 	const { data }: PageProps = $props();
 
@@ -12,10 +13,13 @@
 		schema: schema,
 		kvStore: 'mem',
 		server: data.zeroViewSyncer,
-		auth: data.zeroJwt
+		auth: data.zeroJwt,
+		logLevel: 'debug'
 	});
 
-	const chats = new Query(z.current.query.chatsTable.related('messages'));
+	const chats = new Query(
+		z.current.query.chatsTable.related('messages').orderBy('createdAt', 'desc')
+	);
 
 	interface ChatState {
 		newChatTitle: string;
@@ -31,6 +35,10 @@
 
 	let selectedChat = $derived(
 		chats.current.find((chat) => chat.id === state.selectedChatId) ?? null
+	);
+
+	let messages = $derived(
+		selectedChat?.messages.toSorted((a, b) => a.createdAt! - b.createdAt!) ?? []
 	);
 
 	async function createChat() {
@@ -61,6 +69,22 @@
 			sentByUser: true
 		});
 		state.newMessage = '';
+
+		const llmRequestBody: LLMRequest = {
+			messages: selectedChat?.messages.map((message) => ({
+				content: message.content,
+				role: message.sentByUser ? 'user' : 'assistant'
+			})) ?? [{ content: 'The user sent an empty message by mistake.', role: 'user' }],
+			chatId: state.selectedChatId
+		};
+
+		await fetch('/llm', {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json'
+			},
+			body: JSON.stringify(llmRequestBody)
+		});
 	}
 </script>
 
@@ -118,13 +142,15 @@
 				</div>
 
 				<div class="h-80 overflow-y-auto border rounded p-3 mb-4 space-y-2">
-					{#each selectedChat.messages || [] as message (message.id)}
+					{#each messages || [] as message, idx (message.id)}
 						<div
 							class="p-2 rounded"
 							class:bg-gray-100={message.sentByUser}
 							class:bg-blue-100={message.sentByUser}
 						>
-							<div class="font-bold">{message.sentByUser ? 'You' : 'Assistant'}</div>
+							{#if idx > 0 && messages[idx - 1].sentByUser !== message.sentByUser}
+								<div class="font-bold">{message.sentByUser ? 'You' : 'Assistant'}</div>
+							{/if}
 							<div>{message.content}</div>
 						</div>
 					{/each}

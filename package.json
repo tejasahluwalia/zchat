@@ -43,9 +43,11 @@
 		"vite": "^6.2.0"
 	},
 	"dependencies": {
+		"@ai-sdk/deepseek": "^0.1.12",
 		"@openauthjs/openauth": "^0.4.1",
 		"@rocicorp/zero": "0.16.2025022800",
 		"@tailwindcss/vite": "^4.0.9",
+		"ai": "^4.1.47",
 		"dotenv": "^16.4.7",
 		"drizzle-orm": "^0.40.0",
 		"drizzle-zero": "^0.5.1",

@@ -1,6 +1,6 @@
 import { createSubscriber } from 'svelte/reactivity';
 import type { Query as QueryDef, ReadonlyJSONValue, Schema, TypedView } from '@rocicorp/zero';
-import type { Immutable } from '../../../node_modules/@rocicorp/zero/out/shared/src/immutable.d.ts';
+import type { Immutable } from './shared/immutable';
 import type { AdvancedQuery, HumanReadable } from '@rocicorp/zero/advanced';
 import { getContext } from 'svelte';
 import type { Z } from './z.svelte.js';

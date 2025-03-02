@@ -1,4 +1,4 @@
-import { Resource } from 'sst';
+// import { Resource } from 'sst';
 import { ZERO_AUTH_SECRET, VITE_PUBLIC_SERVER } from '$env/static/private';
 
 import { client, setTokens } from '$lib/server/auth';
