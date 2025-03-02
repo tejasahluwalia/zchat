@@ -88,89 +88,91 @@
 	}
 </script>
 
-<div>
-	<div class="container mx-auto p-4">
-		<div class="mb-8">
-			<h1 class="text-2xl font-bold mb-4">Chats</h1>
-			<form class="flex gap-2 mb-4">
-				<input
-					type="text"
-					class="border rounded px-3 py-2 flex-grow"
-					placeholder="New chat name"
-					bind:value={state.newChatTitle}
-				/>
-				<button
-					class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-					onclick={async () => await createChat()}
-				>
-					Create Chat
-				</button>
-			</form>
+<div class="flex h-screen">
+  <!-- Sidebar for chats -->
+  <div class="w-64 bg-gray-100 p-4 border-r overflow-y-auto">
+    <h1 class="text-xl font-bold mb-4">Chats</h1>
+    <form class="flex flex-col gap-2 mb-4">
+      <input
+        type="text"
+        class="border rounded px-3 py-2"
+        placeholder="New chat name"
+        bind:value={state.newChatTitle}
+      />
+      <button
+        class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+        onclick={async () => await createChat()}
+      >
+        Create Chat
+      </button>
+    </form>
 
-			<div class="space-y-2">
-				{#each chats.current || [] as chat (chat.id)}
-					<div class="border rounded p-3 flex justify-between items-center">
-						<span class="font-medium">{chat.title || 'Unnamed Chat'}</span>
-						<div class="flex gap-2">
-							<button class="text-blue-500 hover:text-blue-700" onclick={() => selectChat(chat.id)}>
-								Open
-							</button>
-							<button
-								class="text-red-500 hover:text-red-700"
-								onclick={async () => await deleteChat(chat.id)}
-							>
-								Delete
-							</button>
-						</div>
-					</div>
-				{/each}
-			</div>
-		</div>
+    <div class="space-y-2">
+      {#each chats.current || [] as chat (chat.id)}
+        <div 
+          class="border rounded p-3 flex justify-between items-center cursor-pointer hover:bg-gray-200"
+          class:bg-blue-100={chat.id === state.selectedChatId}
+          onclick={() => selectChat(chat.id)}
+        >
+          <span class="font-medium truncate">{chat.title || 'Unnamed Chat'}</span>
+          <button
+            class="text-red-500 hover:text-red-700"
+            onclick={(e) => { e.stopPropagation(); deleteChat(chat.id); }}
+          >
+            Delete
+          </button>
+        </div>
+      {/each}
+    </div>
+  </div>
 
-		{#if selectedChat}
-			<div class="border rounded p-4">
-				<div class="flex justify-between items-center mb-4">
-					<h2 class="text-xl font-bold">
-						{selectedChat.title || 'Unnamed Chat'}
-					</h2>
-					<button
-						class="text-gray-500 hover:text-gray-700"
-						onclick={() => (state.selectedChatId = null)}
-					>
-						Close
-					</button>
-				</div>
+  <!-- Main content area -->
+  <div class="flex-1 p-4 flex flex-col">
+    {#if selectedChat}
+      <div class="border rounded p-4 flex-1 flex flex-col">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-xl font-bold">
+            {selectedChat.title || 'Unnamed Chat'}
+          </h2>
+        </div>
 
-				<div class="h-80 overflow-y-auto border rounded p-3 mb-4 space-y-2">
-					{#each messages || [] as message, idx (message.id)}
-						<div
-							class="p-2 rounded"
-							class:bg-gray-100={message.sentByUser}
-							class:bg-blue-100={message.sentByUser}
-						>
-							{#if idx > 0 && messages[idx - 1].sentByUser !== message.sentByUser}
-								<div class="font-bold">{message.sentByUser ? 'You' : 'Assistant'}</div>
-							{/if}
-							<div>{message.content}</div>
-						</div>
-					{/each}
-				</div>
+        <div class="flex-1 overflow-y-auto border rounded p-3 mb-4 space-y-2">
+          {#each messages || [] as message, idx (message.id)}
+            <div
+              class="p-2 rounded mb-2"
+              class:bg-gray-100={!message.sentByUser}
+              class:bg-blue-100={message.sentByUser}
+            >
+              {#if idx === 0 || messages[idx - 1].sentByUser !== message.sentByUser}
+                <div class="font-bold">{message.sentByUser ? 'You' : 'Assistant'}</div>
+              {/if}
+              <div>{message.content}</div>
+            </div>
+          {/each}
+        </div>
 
-				<form class="flex gap-2">
-					<input
-						type="text"
-						class="border rounded px-3 py-2 flex-grow"
-						placeholder="Type a message..."
-						bind:value={state.newMessage}
-					/>
-					<button
-						class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-						onclick={async () => await sendMessage()}
-					>
-						Send
-					</button>
-				</form>
-			</div>
-		{/if}
-	</div>
+        <form class="flex gap-2">
+          <input
+            type="text"
+            class="border rounded px-3 py-2 flex-grow"
+            placeholder="Type a message..."
+            bind:value={state.newMessage}
+          />
+          <button
+            class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+            onclick={async () => await sendMessage()}
+          >
+            Send
+          </button>
+        </form>
+      </div>
+    {:else}
+      <div class="flex-1 flex items-center justify-center text-gray-500">
+        <div class="text-center">
+          <p class="text-xl mb-2">Select a chat or create a new one</p>
+          <p>Your conversations will appear here</p>
+        </div>
+      </div>
+    {/if}
+  </div>
 </div>
