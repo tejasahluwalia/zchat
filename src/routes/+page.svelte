@@ -11,7 +11,7 @@
 	const z = new Z<Schema>({
 		userID: data.userId,
 		schema: schema,
-		kvStore: 'mem',
+		kvStore: 'idb',
 		server: data.zeroViewSyncer,
 		auth: data.zeroJwt,
 		logLevel: 'debug'
