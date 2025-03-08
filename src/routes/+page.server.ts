@@ -42,7 +42,7 @@ export const load: PageServerLoad = async (event) => {
 		.setIssuedAt()
 		.setExpirationTime('30days')
 		.sign(new TextEncoder().encode(must(Resource.ZeroAuthSecret.value)));
-	// .sign(new TextEncoder().encode(must(ZERO_AUTH_SECRET)));
+		// .sign(new TextEncoder().encode(must(ZERO_AUTH_SECRET)));
 
 	const zeroViewSyncer = Resource.ZchatViewSyncer.url;
 	// const zeroViewSyncer = `${VITE_PUBLIC_SERVER}`;

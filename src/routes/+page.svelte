@@ -8,6 +8,8 @@
 	import SvelteMarkdown from '@humanspeak/svelte-markdown';
 	import { escapeLike } from '@rocicorp/zero';
 	import { enhance } from '$app/forms';
+	import { goto } from '$app/navigation';
+	import { page } from '$app/state';
 
 	const { data }: PageProps = $props();
 
@@ -47,21 +49,32 @@
 	);
 
 	const searchResults = $derived(
-		z.current.query.messagesTable
-			.where('content', 'LIKE', `%${escapeLike(chatState.searchQuery)}%`)
-			.run()
+		chatState.searchQuery.trim()
+			? z.current.query.messagesTable
+					.where('content', 'LIKE', `%${escapeLike(chatState.searchQuery)}%`)
+					.run()
+			: []	
 	);
 
-	$effect(() => {});
+	// Initialize selected chat from URL parameter
+	$effect(() => {
+		const chatId = page.url.searchParams.get('chat');
+		if (chatId && chatId !== chatState.selectedChatId) {
+			chatState.selectedChatId = chatId;
+		}
+	});
 
 	async function createChat() {
 		if (!chatState.newChatTitle.trim()) return;
+		const newChatId = nanoid();
 		await z.current.mutate.chatsTable.insert({
-			id: nanoid(),
+			id: newChatId,
 			title: chatState.newChatTitle,
 			userId: data.userId
 		});
 		chatState.newChatTitle = '';
+		// Select the new chat and update URL
+		selectChat(newChatId);
 	}
 
 	async function deleteChat(chatId: string) {
@@ -76,10 +89,41 @@
 
 	function selectChat(chatId: string) {
 		chatState.selectedChatId = chatId;
+		// Update URL with the selected chat ID
+		const url = new URL(window.location.href);
+		url.searchParams.set('chat', chatId);
+		goto(url.toString(), { replaceState: true });
 	}
+
+	function scrollToMessage(messageId: string) {
+		setTimeout(() => {
+			const messageElement = document.getElementById(`message-${messageId}`);
+			if (messageElement) {
+				messageElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+				// Add a brief highlight effect
+				messageElement.classList.add('[&_.chat-bubble]:border-primary');
+				setTimeout(() => messageElement.classList.remove('[&_.chat-bubble]:border-primary'), 2000);
+			}
+		}, 100);
+	}
+
+	let isGenerating = $state(false);
 
 	async function sendMessage() {
 		if (!chatState.newMessage.trim() || !chatState.selectedChatId) return;
+
+		isGenerating = true;
+		// Show generating toast
+		const toastId = `toast-${Date.now()}`;
+		const toast = document.createElement('div');
+		toast.innerHTML = `
+			<div id="${toastId}" class="toast toast-top toast-center">
+				<div class="alert alert-info">
+					<span>Generating response...</span>
+				</div>
+			</div>
+		`;
+		document.body.appendChild(toast);
 
 		const llmRequestBody: LLMRequest = {
 			messages: [
@@ -110,57 +154,56 @@
 			},
 			body: JSON.stringify(llmRequestBody)
 		});
+		isGenerating = false;
+		// Remove the toast when generation is complete
+		document.getElementById(toastId)?.remove();
 	}
 </script>
 
 <div class="grid grid-cols-12 h-screen">
 	<!-- Sidebar for chats -->
-	<div class="col-span-2 bg-gray-100 p-4 border-r overflow-y-auto flex flex-col justify-between">
+	<div class="col-span-2 p-4 border-base-200 border shadow-xl overflow-y-auto flex flex-col justify-between">
 		<div>
 			<h1 class="text-xl font-bold mb-4">Chats</h1>
 
 			<form class="flex flex-col gap-2 mb-4">
 				<input
 					type="text"
-					class="border rounded px-3 py-2"
+					class="input"
 					placeholder="New chat name"
 					bind:value={chatState.newChatTitle}
 				/>
-				<button
-					class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-					onclick={async () => await createChat()}
-				>
+				<button class="btn btn-primary" onclick={async () => await createChat()}>
 					Create Chat
 				</button>
 			</form>
 
-			<div class="space-y-2">
+			<ul class="list bg-base-200 rounded-box shadow-md">
 				{#each chats.current || [] as chat (chat.id)}
-					<div
-						class="border rounded p-3 flex justify-between items-center cursor-pointer hover:bg-gray-200"
-						class:bg-blue-100={chat.id === chatState.selectedChatId}
-					>
-						<span class="font-medium truncate">{chat.title || 'Unnamed Chat'}</span>
-						<button onclick={() => selectChat(chat.id)}>Open</button>
+					<li class="list-row p-1 items-center" class:bg-base-300={chat.id === chatState.selectedChatId}>
+						<a
+							class="list-col-grow link block font-medium truncate p-2 w-full"
+							href={`/?chat=${chat.id}`}>{chat.title || 'Unnamed Chat'}</a
+						>
 						<button
-							class="text-red-500 hover:text-red-700"
+							class="btn btn-error btn-soft btn-sm m-2"
 							onclick={async () => await deleteChat(chat.id)}
 						>
 							Delete
 						</button>
-					</div>
+					</li>
 				{/each}
-			</div>
+			</ul>
 		</div>
 		<form method="POST" action="/auth/logout" use:enhance>
-			<button type="submit">Logout</button>
+			<button class="btn btn-error btn-soft w-full" type="submit">Logout</button>
 		</form>
 	</div>
 
 	<!-- Main content area -->
 	<div class="p-4 flex flex-col w-full max-h-screen col-span-7">
 		{#if selectedChat}
-			<div class="border rounded p-4 flex-1 flex flex-col max-h-full w-3xl mx-auto">
+			<div class="rounded p-4 flex-1 flex flex-col max-h-full w-3xl mx-auto">
 				<div class="flex justify-between items-center mb-4">
 					<h2 class="text-xl font-bold">
 						{selectedChat.title || 'Unnamed Chat'}
@@ -180,7 +223,8 @@
 							Public
 						</label>
 						<button
-							class="text-sm bg-gray-200 px-2 py-1 rounded hover:bg-gray-300"
+							class="btn btn-sm"
+							disabled={!selectedChat.isPublic}
 							onclick={() => {
 								const url = `${window.location.origin}/shared-chat/${selectedChat.id}`;
 								navigator.clipboard.writeText(url);
@@ -191,17 +235,18 @@
 					</div>
 				</div>
 
-				<div class="flex-1 overflow-y-auto border rounded p-3 mb-4 space-y-2">
+				<div class="flex-1 overflow-y-auto border border-base-300 rounded p-3 mb-4">
 					{#each messages || [] as message, idx (message.id)}
 						<div
-							class="p-2 rounded mb-2"
-							class:bg-gray-100={!message.sentByUser}
-							class:bg-blue-100={message.sentByUser}
+							class="chat"
+							class:chat-start={!message.sentByUser}
+							class:chat-end={message.sentByUser}
+							id={`message-${message.id}`}
 						>
 							{#if idx === 0 || messages[idx - 1].sentByUser !== message.sentByUser}
-								<div class="font-bold">{message.sentByUser ? 'You' : 'Assistant'}</div>
+								<div class="chat-header text-sm mb-2">{message.sentByUser ? 'You' : 'Assistant'}</div>
 							{/if}
-							<div class="[&_pre]:overflow-auto">
+							<div class="chat-bubble px-4 py-0 [&_p]:my-4 [&_pre]:overflow-auto [&_hr]:border-gray-400 [&_hr]:my-2">
 								<SvelteMarkdown source={message.content} />
 							</div>
 						</div>
@@ -211,20 +256,15 @@
 				<form class="flex gap-2">
 					<input
 						type="text"
-						class="border rounded px-3 py-2 flex-grow"
+						class="input w-full"
 						placeholder="Type a message..."
 						bind:value={chatState.newMessage}
 					/>
-					<button
-						class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-						onclick={async () => await sendMessage()}
-					>
-						Send
-					</button>
+					<button class="btn btn-primary" onclick={async () => await sendMessage()}> Send </button>
 				</form>
 			</div>
 		{:else}
-			<div class="flex-1 flex items-center justify-center text-gray-500">
+			<div class="flex-1 flex items-center justify-center">
 				<div class="text-center">
 					<p class="text-xl mb-2">Select a chat or create a new one</p>
 					<p>Your conversations will appear here</p>
@@ -234,14 +274,14 @@
 	</div>
 
 	<!-- Right sidebar for search -->
-	<div class="col-span-3 bg-gray-100 p-4 border-l overflow-y-auto">
+	<div class="col-span-3 p-4 border-base-200 border overflow-y-auto">
 		<h1 class="text-xl font-bold mb-4">Search</h1>
 
 		<!-- Search box -->
 		<div class="mb-4">
 			<input
 				type="text"
-				class="border rounded px-3 py-2 w-full"
+				class="input w-full"
 				placeholder="Search messages..."
 				bind:value={chatState.searchQuery}
 			/>
@@ -249,27 +289,40 @@
 
 		<!-- Search results -->
 		{#if searchResults.length > 0}
-			<div class="border rounded p-2 mb-4 max-h-96 overflow-y-auto">
-				<h2 class="font-semibold mb-2">Results ({searchResults.length})</h2>
-				{#each searchResults as result (result.id)}
-					<button
-						class="p-2 border-b text-sm hover:bg-gray-200 cursor-pointer mb-2"
-						onclick={() => selectChat(result.chatId)}
-					>
-						<div class="text-xs text-gray-500 mb-1">
-							Chat: {chats.current.find((c) => c.id === result.chatId)?.title || 'Unknown'}
-						</div>
-						<div class="truncate">{result.content}</div>
-					</button>
-				{/each}
+			<div class="card bg-base-200 shadow-sm w-full">
+				<div class="card-body p-4">
+					<h2 class="card-title text-sm">Results ({searchResults.length})</h2>
+					<ul class="menu menu-compact w-full">
+						{#each searchResults as result (result.id)}
+							<li class="w-full">
+								<button 
+									class="hover:bg-base-200 block transition-colors w-full"
+									onclick={() => {
+										selectChat(result.chatId);
+										scrollToMessage(result.id);
+									}}
+								>
+									<div class="flex flex-col gap-1 w-full">
+										<span class="text-xs text-base-content/60">
+											Chat: {chats.current.find((c) => c.id === result.chatId)?.title || 'Unknown'}
+										</span>
+										<span class="text-sm truncate max-w-full">
+											{result.content}
+										</span>
+									</div>
+								</button>
+							</li>
+						{/each}
+					</ul>
+				</div>
 			</div>
 		{:else if chatState.searchQuery.trim()}
-			<div class="border rounded p-2 mb-4">
-				<p class="text-gray-500 text-sm">No results found</p>
+			<div class="alert alert-info">
+				<span class="text-sm">No results found</span>
 			</div>
 		{:else}
-			<div class="text-gray-500 text-sm">
-				<p>Search across all messages in all chats</p>
+			<div class="alert alert-info">
+				<span class="text-sm">Search across all messages in all chats</span>
 			</div>
 		{/if}
 	</div>

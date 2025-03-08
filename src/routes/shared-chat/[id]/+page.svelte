@@ -31,50 +31,9 @@
 	let messages = $derived(chat?.messages.toSorted((a, b) => b.createdAt! - a.createdAt!) ?? []);
 </script>
 
-<div class="grid grid-cols-12 h-screen">
-	<!-- Sidebar for chats -->
-	<div class="col-span-2 bg-gray-100 p-4 border-r overflow-y-auto flex flex-col justify-between">
-		<!-- <div>
-			<h1 class="text-xl font-bold mb-4">Chats</h1>
-
-			<form class="flex flex-col gap-2 mb-4">
-				<input
-					type="text"
-					class="border rounded px-3 py-2"
-					placeholder="New chat name"
-					bind:value={chatState.newChatTitle}
-				/>
-				<button
-					class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-					onclick={async () => await createChat()}
-				>
-					Create Chat
-				</button>
-			</form>
-
-			<div class="space-y-2">
-				{#each chats.current || [] as chat (chat.id)}
-					<div
-						class="border rounded p-3 flex justify-between items-center cursor-pointer hover:bg-gray-200"
-						class:bg-blue-100={chat.id === chatState.selectedChatId}
-					>
-						<span class="font-medium truncate">{chat.title || 'Unnamed Chat'}</span>
-						<button onclick={() => selectChat(chat.id)}>Open</button>
-						<button
-							class="text-red-500 hover:text-red-700"
-							onclick={async () => await deleteChat(chat.id)}
-						>
-							Delete
-						</button>
-					</div>
-				{/each}
-			</div>
-		</div>
-		<a href="/logout">Logout</a> -->
-	</div>
-
+<div class="flex h-screen">
 	<!-- Main content area -->
-	<div class="p-4 flex flex-col w-full max-h-screen col-span-7">
+	<div class="p-4 flex flex-col w-full max-h-screen max-w-3xl mx-auto">
 		{#if chat}
 			<div class="border rounded p-4 flex-1 flex flex-col max-h-full w-3xl mx-auto">
 				<div class="flex justify-between items-center mb-4">
@@ -83,17 +42,17 @@
 					</h2>
 				</div>
 
-				<div class="flex-1 overflow-y-auto border rounded p-3 mb-4 space-y-2">
+				<div class="flex-1 overflow-y-auto border border-base-300 rounded p-3 mb-4">
 					{#each messages || [] as message, idx (message.id)}
 						<div
-							class="p-2 rounded mb-2"
-							class:bg-gray-100={!message.sentByUser}
-							class:bg-blue-100={message.sentByUser}
+							class="chat"
+							class:chat-start={!message.sentByUser}
+							class:chat-end={message.sentByUser}
 						>
 							{#if idx === 0 || messages[idx - 1].sentByUser !== message.sentByUser}
-								<div class="font-bold">{message.sentByUser ? 'You' : 'Assistant'}</div>
+								<div class="chat-header text-sm mb-2">{message.sentByUser ? 'You' : 'Assistant'}</div>
 							{/if}
-							<div class="[&_pre]:overflow-auto">
+							<div class="chat-bubble px-4 py-0 [&_p]:my-4 [&_pre]:overflow-auto [&_hr]:border-gray-400 [&_hr]:my-2">
 								<SvelteMarkdown source={message.content} />
 							</div>
 						</div>
@@ -110,6 +69,4 @@
 		{/if}
 	</div>
 
-	<!-- Right sidebar for search -->
-	<div class="col-span-3 bg-gray-100 p-4 border-l overflow-y-auto"></div>
 </div>

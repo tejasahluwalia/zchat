@@ -1,5 +1,5 @@
 services:
-  zstart_postgres:
+  zchat_postgres:
     image: postgres:16.2-alpine
     shm_size: 1g
     user: postgres
@@ -23,9 +23,9 @@ services:
       -c hot_standby=on
       -c hot_standby_feedback=on
     volumes:
-      - zstart_pgdata:/var/lib/postgresql/data
+      - zchat_pgdata:/var/lib/postgresql/data
       - ./:/docker-entrypoint-initdb.d
 
 volumes:
-  zstart_pgdata:
+  zchat_pgdata:
     driver: local

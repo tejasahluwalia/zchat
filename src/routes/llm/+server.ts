@@ -39,20 +39,19 @@ export const POST: RequestHandler = async (event) => {
 	});
 
 	const deepseek = createDeepSeek({
-		// apiKey: DEEPSEEK_API_KEY
-		apiKey: Resource.DeepseekApiKey.value
+		apiKey: DEEPSEEK_API_KEY
+		// apiKey: Resource.DeepseekApiKey.value
 	});
 
 	const newMessageId = nanoid();
 	let newMessageText = '';
 
+	const startTime = Date.now();
+	let firstChunkTime: number | null = null;
+
 	const { textStream } = streamText({
 		model: deepseek('deepseek-chat'),
 		messages,
-		experimental_transform: smoothStream({
-			delayInMs: 2000,
-			chunking: 'line'
-		})
 	});
 
 	for await (const chunk of textStream) {
