@@ -32,8 +32,6 @@ export const POST: RequestHandler = async (event) => {
 	const body = await request.json();
 	const { chatId, messages } = body as LLMRequest;
 
-	console.log(connUrl);
-
 	const db = drizzle(connUrl, {
 		schema
 	});
@@ -50,7 +48,7 @@ export const POST: RequestHandler = async (event) => {
 		model: deepseek('deepseek-chat'),
 		messages,
 		experimental_transform: smoothStream({
-			delayInMs: 20, // optional: defaults to 10ms
+			delayInMs: 200, // optional: defaults to 10ms
 			chunking: 'line', // optional: defaults to 'word'
 		  }),
 	});
