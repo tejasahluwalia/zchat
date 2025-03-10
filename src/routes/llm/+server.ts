@@ -39,8 +39,8 @@ export const POST: RequestHandler = async (event) => {
 	});
 
 	const deepseek = createDeepSeek({
-		apiKey: DEEPSEEK_API_KEY
-		// apiKey: Resource.DeepseekApiKey.value
+		// apiKey: DEEPSEEK_API_KEY
+		apiKey: Resource.DeepseekApiKey.value
 	});
 
 	const newMessageId = nanoid();
